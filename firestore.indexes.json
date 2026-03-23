@@ -1,0 +1,19 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "titles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "releaseDay", "order": "ASCENDING"},
+        {"fieldPath": "lastUpdate", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "users", 
+      "fields": [
+        {"fieldPath": "plan", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    }
+  ]
+}

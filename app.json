@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "minhas-leituras",
+    "name": "Minhas Leituras",
     "slug": "minhas-leituras",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -21,10 +21,24 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.arthurfrc.minhasleituras"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
+    "plugins": [
+      "@react-native-community/datetimepicker",
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#ffffff"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0816fbd0-47e3-423d-b0bf-f6f30d9e118f"
+      }
     }
   }
 }
