@@ -15,6 +15,7 @@ export type TapAction = 'edit' | 'copy_url' | 'open_url';
 export interface UserSettings {
     shortTapAction: TapAction;
     longPressAction: TapAction;
+    showAdultContent: boolean;
 }
 
 // ===========================
@@ -33,6 +34,7 @@ export const getSettings = async (): Promise<UserSettings> => {
     return {
         shortTapAction: 'open_url',
         longPressAction: 'edit',
+        showAdultContent: false,
     }
 };
 

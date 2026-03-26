@@ -7,7 +7,6 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AntDesign } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
-import * as ImagePicker from 'expo-image-picker';
 import { RootStackParamList } from 'App';
 import { addTitle, updateTitle, getTitles } from '@/services/storageServices'; // Usa as funções LOCAIS
 import { Title } from '@/types';
@@ -32,6 +31,7 @@ const TitleDetailScreen: React.FC = () => {
     const [releaseDay, setReleaseDay] = useState<number | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [isFinished, setIsFinished] = useState(false);
+    const [isAdultContent, setIsAdultContent] = useState(false);
 
     const [coverImageUrl, setCoverImageUrl] = useState<string>(''); // Estado para URL da imagem de capa
 
@@ -53,6 +53,7 @@ const TitleDetailScreen: React.FC = () => {
                     setReleaseDay(titleToEdit.releaseDay ?? null);
                     setCoverImageUrl(titleToEdit.coverUri || ''); // Carrega a URL da imagem
                     setIsFinished(titleToEdit.isComplete || false);
+                    setIsAdultContent(titleToEdit.isAdultContent || false);
                 } else {
                     Toast.show({
                         type: 'error',
@@ -71,6 +72,7 @@ const TitleDetailScreen: React.FC = () => {
                 setReleaseDay(null);
                 setIsFinished(false);
                 setCoverImageUrl('');
+                setIsAdultContent(false);
             }
         };
         loadTitleData();
@@ -127,6 +129,7 @@ const TitleDetailScreen: React.FC = () => {
             coverUri: coverImageUrl.trim() || undefined, // URL direta da imagem
             thumbnailUri: coverImageUrl.trim() || undefined, // Usa a mesma URL por enquanto
             lastUpdate: new Date().toISOString(),
+            isAdultContent: isAdultContent,
         };
 
         if (isEditing && id) {
@@ -301,6 +304,15 @@ const TitleDetailScreen: React.FC = () => {
                             value={isFinished}
                         />
                     </View>
+                    <View style={styles.adultContentContainer}>
+                        <Text style={styles.label}>Conteúdo Adulto (+18)</Text>
+                        <Switch
+                            trackColor={{ false: themeColors.switchInactive, true: themeColors.switchActive }}
+                            thumbColor={isAdultContent ? themeColors.switchActive : themeColors.switchTumb}
+                            onValueChange={() => setIsAdultContent(previousState => !previousState)}
+                            value={isAdultContent}
+                        />
+                    </View>
                     <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
                         <Text style={styles.saveButtonText}>{isEditing ? 'Salvar' : 'Adicionar'}</Text>
                     </TouchableOpacity>
@@ -453,6 +465,12 @@ const createStyles = (theme: 'light' | 'dark', themeColors: typeof colors.light)
         },
         selectedDayButtonText: {
             color: '#FFFFFF',
+        },
+        adultContentContainer: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 15,
         },
     });
 

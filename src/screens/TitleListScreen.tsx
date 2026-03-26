@@ -9,7 +9,12 @@ import Toast from 'react-native-toast-message';
 import * as Clipboard from 'expo-clipboard';
 import * as Linking from 'expo-linking';
 import { RootStackParamList } from 'App';
-import { getTitles, updateTitle, deleteTitle, TapAction, UserSettings, getSettings, exportTitles, importTitles, syncLocalToCloud } from '@/services/storageServices';
+import {
+    getTitles, updateTitle, deleteTitle,
+    TapAction, UserSettings, getSettings,
+    exportTitles, importTitles, syncLocalToCloud,
+    saveSettings
+} from '@/services/storageServices';
 import { Title } from '@/types';
 import { useTheme } from '@/context/ThemeContext';
 import { colors } from '@/styles/colors';
@@ -48,6 +53,7 @@ const TitleListScreen: React.FC = () => {
     const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
     const [isExportModalVisible, setIsExportModalVisible] = useState(false);
     const [isImportModalVisible, setIsImportModalVisible] = useState(false);
+    const [showAdultContent, setShowAdultContent] = useState(false);
 
     const [isSyncing, setIsSyncing] = useState(false);
 
@@ -58,6 +64,7 @@ const TitleListScreen: React.FC = () => {
             getTitles(),
             getSettings()
         ]);
+        setShowAdultContent(userSettings.showAdultContent || false);
         setTitles(storedTitles);
         setSettings(userSettings);
         setLoading(false);
@@ -142,6 +149,7 @@ const TitleListScreen: React.FC = () => {
         setIsSyncing(true);
         try {
             await syncLocalToCloud();
+            await loadData();
             Toast.show({
                 type: 'success',
                 text1: 'Sincronizado',
@@ -229,8 +237,10 @@ const TitleListScreen: React.FC = () => {
     }
 
     const displayedTitles = useMemo(() => {
-        const filteredTitles = titles.filter(title => title.name.toLowerCase().includes(searchQuery.toLowerCase()));
-
+        const filteredTitles = titles.filter(title =>
+            title.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+            (showAdultContent || !title.isAdultContent)
+        );
         switch (sortOrder) {
             case 'alpha-asc':
                 return filteredTitles.sort((a, b) => a.name.localeCompare(b.name));
@@ -347,6 +357,22 @@ const TitleListScreen: React.FC = () => {
                 />
                 <TouchableOpacity style={styles.sortButton} onPress={handleSortChange}>
                     <Text style={styles.sortButtonText}>{getSortButtonText()}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.adultContentButton, showAdultContent && styles.adultContentButtonActive]}
+                    onPress={() => {
+                        const newValue = !showAdultContent;
+                        setShowAdultContent(newValue);
+                        // Salvar nas configurações
+                        if (settings) {
+                            saveSettings({ ...settings, showAdultContent: newValue });
+                        }
+                    }}
+                >
+                    <Text style={[styles.adultContentButtonText, showAdultContent && styles.adultContentButtonTextActive]}>
+                        18+
+                    </Text>
                 </TouchableOpacity>
             </View>
             {displayedTitles.length === 0 ? (
@@ -541,7 +567,30 @@ const createStyles = (theme: 'light' | 'dark', themeColors: typeof colors.light)
         },
         dotsMenuButton: {
             marginLeft: 15,
-        }
+        },
+        adultContentButton: {
+            paddingVertical: 10,
+            paddingHorizontal: 12,
+            backgroundColor: themeColors.card,
+            borderRadius: 8,
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: themeColors.border,
+            marginLeft: 10,
+        },
+        adultContentButtonActive: {
+            backgroundColor: '#e74c3c',
+            borderColor: '#e74c3c',
+        },
+        adultContentButtonText: {
+            color: themeColors.text,
+            fontWeight: 'bold',
+            fontSize: 12,
+        },
+        adultContentButtonTextActive: {
+            color: 'white',
+        },
     });
 
 export default TitleListScreen;

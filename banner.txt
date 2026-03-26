@@ -1,0 +1,4 @@
+Banners:
+- ID de aplicativo:         ca-app-pub-1296094569685364~8592737311
+- ID de anúncio banner:     ca-app-pub-1296094569685364/5786343678
+- ID de anúncio inter:      ca-app-pub-1296094569685364/3011074311
