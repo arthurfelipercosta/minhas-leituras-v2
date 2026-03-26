@@ -254,7 +254,7 @@ const TitleListScreen: React.FC = () => {
             default:
                 return filteredTitles;
         }
-    }, [titles, searchQuery, sortOrder])
+    }, [titles, searchQuery, sortOrder, showAdultContent])
 
     const getSortButtonText = () => {
         if (sortOrder === 'alpha-asc') return 'A-Z';

@@ -2,7 +2,7 @@
 
 // import de pacotes
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Switch, Image, FlatList } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Switch, Image } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AntDesign } from '@expo/vector-icons';
@@ -124,18 +124,20 @@ const TitleDetailScreen: React.FC = () => {
             currentChapter: chapterNumber,
             lastChapter: isFinished ? lastChapterNumber : undefined,
             isComplete: isFinished,
-            siteUrl: siteUrl.trim() || undefined,
+            siteUrl: siteUrl.trim() ?? undefined,
             releaseDay: releaseDay ?? undefined,
-            coverUri: coverImageUrl.trim() || undefined, // URL direta da imagem
-            thumbnailUri: coverImageUrl.trim() || undefined, // Usa a mesma URL por enquanto
+            coverUri: coverImageUrl.trim() ?? null, // URL direta da imagem
+            thumbnailUri: coverImageUrl.trim() ?? null, // Usa a mesma URL por enquanto
             lastUpdate: new Date().toISOString(),
             isAdultContent: isAdultContent,
         };
 
         if (isEditing && id) {
             const updatedTitle: Title = {
-                id: id, // ID do título existente
                 ...titleData,
+                coverUri: titleData.coverUri ?? null,
+                thumbnailUri: titleData.thumbnailUri ?? null,
+                id: id, // ID do título existente
             };
             await updateTitle(updatedTitle); // <--- Usa a função LOCAL
             Toast.show({
@@ -144,7 +146,10 @@ const TitleDetailScreen: React.FC = () => {
                 text2: 'Título atualizado localmente!',
             });
         } else {
-            await addTitle(titleData); // <--- Usa a função LOCAL
+            await addTitle({
+                ...titleData,
+                coverUri: titleData.coverUri ?? null,
+            }); // <--- Usa a função LOCAL
             Toast.show({
                 type: 'success',
                 text1: 'Sucesso',
@@ -249,7 +254,7 @@ const TitleDetailScreen: React.FC = () => {
                         />
                         <TouchableOpacity
                             onPress={() => {
-                                const num = parseInt(currentChapter);
+                                const num = parseFloat(currentChapter);
                                 if (!isNaN(num)) {
                                     setCurrentChapter((num + 1).toString()); // Incrementa 1
                                 } else {

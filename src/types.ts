@@ -2,17 +2,17 @@
 
 // Interface para os títulos presentes no apliactivo
 export interface Title {
-    id: string;                 // Um ID único para cada título
-    name: string;               // Nome do título (e.g., "Fullmetal Alchemist")
-    currentChapter: number;     // Número do capítulo atual, pode ser decimal
-    lastChapter?: number;       // Número do último capítulo, pode ser decimal
-    siteUrl?: string;           // Campo para a URL do site (opcional)
-    releaseDay?: number;        // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
-    lastUpdate?: string;        // Última atualização
-    thumbnailUri?: string;      // Imagem de thumbnail
-    coverUri?: string;          // Imagem na tela de detalhes
-    isComplete?: boolean;       // Indica se a obra já está finalizada
-    isAdultContent?: boolean;   // Indica se é conteúdo adulto (+18)
+    id: string;                     // Um ID único para cada título
+    name: string;                   // Nome do título (e.g., "Fullmetal Alchemist")
+    currentChapter: number;         // Número do capítulo atual, pode ser decimal
+    lastChapter?: number;           // Número do último capítulo, pode ser decimal
+    siteUrl?: string | null;        // Campo para a URL do site (opcional)
+    releaseDay?: number | null;     // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+    lastUpdate?: string;            // Última atualização
+    thumbnailUri?: string | null;   // Imagem de thumbnail
+    coverUri?: string | null;       // Imagem na tela de detalhes
+    isComplete?: boolean;           // Indica se a obra já está finalizada
+    isAdultContent?: boolean;       // Indica se é conteúdo adulto (+18)
 }
 
 // Tipos auxiliares de plano
