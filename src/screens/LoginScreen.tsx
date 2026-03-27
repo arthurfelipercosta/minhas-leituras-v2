@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { MaterialIcons } from '@expo/vector-icons';
+import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -28,7 +28,7 @@ const LoginScreen: React.FC = () => {
     const themeColors = colors[theme];
     const styles = createStyles(theme, themeColors);
 
-    const { signIn, signUp, resetPassword, user } = useAuth();
+    const { signIn, signUp, resetPassword, user, signInWithGoogle } = useAuth();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -43,7 +43,7 @@ const LoginScreen: React.FC = () => {
     const clearErrors = () => setFieldErrors({});
 
     React.useEffect(() => {
-        if(user) {
+        if (user) {
             navigation.navigate('Profile' as any);
         }
     }, [user, navigation]);
@@ -178,6 +178,27 @@ const LoginScreen: React.FC = () => {
                 type: 'error',
                 text1: 'Erro ao enviar email',
                 text2: error.message || 'Não foi possível enviar o email.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleGoogleSignIn = async () => {
+        try {
+            setIsLoading(true);
+            await signInWithGoogle();
+            Toast.show({
+                type: 'success',
+                text1: 'Login realizado com sucesso!',
+                text2: 'Bem-vindo!'
+            });
+            navigation.navigate('Profile');
+        } catch (error: any) {
+            Toast.show({
+                type: 'error',
+                text1: 'Erro ao fazer login com Google',
+                text2: error.message || 'Não foi possível fazer login com Google.',
             });
         } finally {
             setIsLoading(false);
@@ -327,6 +348,15 @@ const LoginScreen: React.FC = () => {
                         </>
                     )}
 
+                    <TouchableOpacity
+                        style={[styles.googleButton, isLoading && styles.buttonDisabled]}
+                        onPress={handleGoogleSignIn}
+                        disabled={isLoading}
+                    >
+                        <FontAwesome5 name="google" size={24} color="#4285F4" />
+                        <Text style={styles.googleButtonText}>Entrar com Google</Text>
+                    </TouchableOpacity>
+
                     {showResetPassword && (
                         <>
                             <View>
@@ -475,6 +505,26 @@ const createStyles = (theme: 'light' | 'dark', themeColors: typeof colors.light)
         },
         togglePasswordButton: {
             padding: 10,
+        },
+        googleButton: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: themeColors.card,
+            borderWidth: 1,
+            borderColor: '#4285F4',
+            borderRadius: 8,
+            padding: 12,
+            marginTop: 10,
+            gap: 10,
+        },
+        googleButtonText: {
+            color: themeColors.text,
+            fontSize: 16,
+            fontWeight: '500',
+        },
+        buttonDisabled: {
+            opacity: 0.5,
         },
     });
 

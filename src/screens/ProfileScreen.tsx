@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert, Animated, Easing } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { MaterialIcons } from '@expo/vector-icons';
+import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
 import Toast from 'react-native-toast-message';
 
@@ -24,7 +24,7 @@ const ProfileScreen: React.FC = () => {
     const themeColors = colors[theme];
     const styles = createStyles(theme, themeColors);
 
-    const { user, logout, loading } = useAuth();
+    const { user, logout, loading, linkGoogleAccount } = useAuth();
     const [isConnected, setIsConnected] = useState(true);
     const [isSyncing, setIsSyncing] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
@@ -38,6 +38,7 @@ const ProfileScreen: React.FC = () => {
 
     const rotation = useRef(new Animated.Value(0)).current;
     const uploadTranslation = useRef(new Animated.Value(0)).current;
+    const hasGoogleProvider = user?.providerData.some(provider => provider.providerId === 'google.com');
 
     useEffect(() => {
         if (isSyncing) {
@@ -196,6 +197,18 @@ const ProfileScreen: React.FC = () => {
         );
     }
 
+    const handleLinkGoogle = async () => {
+        try {
+            await linkGoogleAccount();
+        } catch (error: any) {
+            Toast.show({
+                type: 'error',
+                text1: 'Erro ao conectar',
+                text2: error.message || 'Não foi possível conectar sua conta Google.',
+            });
+        }
+    };
+
     const handleLogout = () => {
         Alert.alert(
             'Confirmar Logout',
@@ -311,6 +324,18 @@ const ProfileScreen: React.FC = () => {
                         <Text style={styles.actionButtonText}>Trocar Senha</Text>
                     </View>
                 </TouchableOpacity>
+
+                {!hasGoogleProvider && (
+                    <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={handleLinkGoogle}
+                    >
+                        <View style={styles.actionButtonContent}>
+                            <FontAwesome5 name='google' size={24} color='#4285F4' />
+                            <Text style={styles.actionButtonText}>Conectar conta Google</Text>
+                        </View>
+                    </TouchableOpacity>
+                )}
 
                 <TouchableOpacity
                     style={styles.deleteButton}

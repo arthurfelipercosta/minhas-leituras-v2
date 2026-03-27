@@ -2,8 +2,9 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Alert } from 'react-native';
-import Toast from 'react-native-toast-message';
 import { doc, getDoc } from 'firebase/firestore';
+import Toast from 'react-native-toast-message';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 import {
     signInWithEmailAndPassword,
@@ -14,6 +15,9 @@ import {
     reauthenticateWithCredential,
     onAuthStateChanged,
     EmailAuthProvider,
+    GoogleAuthProvider,
+    signInWithCredential,
+    linkWithCredential,
     User
 } from 'firebase/auth';
 import { auth, db } from '@/config/firebaseConfig';
@@ -26,6 +30,8 @@ interface AuthContextData {
     signUp: (email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
     resetPassword: (email: string) => Promise<void>;
+    signInWithGoogle: () => Promise<void>;
+    linkGoogleAccount: () => Promise<void>;
     changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
@@ -36,6 +42,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Configurar o Google Sign-In
+        GoogleSignin.configure({
+            webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT,
+        });
+
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setUser(user);
             setLoading(false);
@@ -111,6 +122,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const signInWithGoogle = async () => {
+        try {
+            await GoogleSignin.hasPlayServices();
+            const response = await GoogleSignin.signIn();
+
+            // Verificar se o response foi bem-sucedido
+            if (response.type === 'success') {
+                const userInfo = response.data;
+
+                // O idToken está em userInfo.idToken
+                const googleCredential = GoogleAuthProvider.credential(userInfo.idToken);
+                const userCredential = await signInWithCredential(auth, googleCredential);
+                const user = userCredential.user;
+
+                if (user) {
+                    await createUserProfileIfNotExists(
+                        user.uid,
+                        user.email!,
+                        user.displayName ?? undefined,
+                        user.photoURL ?? undefined,
+                    );
+                    setUser(user);
+                }
+            } else {
+                throw new Error('Login cancelado');
+            }
+        } catch (error: any) {
+            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+                throw new Error('Login cancelado');
+            } else if (error.code === statusCodes.IN_PROGRESS) {
+                throw new Error('Login já em andamento');
+            } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+                throw new Error('Google Play Services não disponível');
+            } else {
+                throw error;
+            }
+        }
+    };
+
+    const linkGoogleAccount = async () => {
+        if (!auth.currentUser) {
+            throw new Error('Usuário não está logado');
+        }
+
+        try {
+            await GoogleSignin.hasPlayServices();
+            const response = await GoogleSignin.signIn();
+
+            // Verificar se o response foi bem-sucedido
+            if (response.type === 'success') {
+                const userInfo = response.data;
+
+                // O idToken está em userInfo.idToken
+                const googleCredential = GoogleAuthProvider.credential(userInfo.idToken);
+                await linkWithCredential(auth.currentUser, googleCredential);
+
+                Toast.show({
+                    type: 'success',
+                    text1: 'Conta Google conectada!',
+                    text2: 'Sua conta Google foi vinculada com sucesso.',
+                });
+            } else {
+                throw new Error('Login cancelado');
+            }
+        } catch (error: any) {
+            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+                throw new Error('Login cancelado');
+            } else if (error.code === statusCodes.IN_PROGRESS) {
+                throw new Error('Login já em andamento');
+            } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+                throw new Error('Google Play Services não disponível');
+            } else if (error.code === 'auth/provider-already-linked') {
+                throw new Error('Esta conta Google já está vinculada');
+            } else {
+                throw error;
+            }
+        }
+    };
+
     const signUp = async (email: string, password: string) => {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await createUserProfileIfNotExists(
@@ -143,7 +233,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, signIn, signUp, logout, resetPassword, changePassword }}>
+        <AuthContext.Provider value={{
+            user,
+            loading,
+            signIn,
+            signUp,
+            logout,
+            resetPassword,
+            changePassword,
+            linkGoogleAccount,
+            signInWithGoogle
+        }}>
             {children}
         </AuthContext.Provider>
     );
