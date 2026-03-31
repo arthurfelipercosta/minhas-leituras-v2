@@ -25,8 +25,13 @@
       "package": "com.arthurfrc.minhasleituras"
     },
     "plugins": [
-      "@react-native-google-mobile-ads",
       "@react-native-community/datetimepicker",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-1296094569685364~8592737311"
+        }
+      ],
       "expo-font",
       [
         "expo-notifications",

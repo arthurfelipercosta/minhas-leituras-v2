@@ -24,6 +24,8 @@ import TitleListItem from '@/components/TitleListItem';
 import { SyncButton } from '@/components/SyncButton';
 import { auth } from '@/config/firebaseConfig';
 import { signOut, User } from 'firebase/auth';
+import { useSubscription } from '@/context/SubscriptionContext';
+import { useInterstitial } from '@/hooks/useAds';
 
 type TitleListScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'TitleList'>;
 
@@ -56,7 +58,8 @@ const TitleListScreen: React.FC = () => {
     const [showAdultContent, setShowAdultContent] = useState(false);
 
     const [isSyncing, setIsSyncing] = useState(false);
-
+    const { isPremium } = useSubscription();
+    const { showInterstitial } = useInterstitial();
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -71,6 +74,19 @@ const TitleListScreen: React.FC = () => {
     }, []);
 
     const confirmExport = useCallback(async () => {
+
+        if (!isPremium) {
+            const adShown = showInterstitial();
+            if (!adShown) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Erro na Exportação',
+                    text2: 'Não foi possível exibir anúncio.',
+                });
+                return;
+            }
+        }
+
         try {
             const jsonString = await exportTitles();
             await Clipboard.setStringAsync(jsonString);
@@ -89,7 +105,7 @@ const TitleListScreen: React.FC = () => {
         } finally {
             setIsExportModalVisible(false);
         }
-    }, []);
+    }, [isPremium, showInterstitial]);
 
     const cancelExport = useCallback(() => {
         setIsExportModalVisible(false);
@@ -99,6 +115,19 @@ const TitleListScreen: React.FC = () => {
     }, []);
 
     const confirmImport = useCallback(async () => {
+
+        if (!isPremium) {
+            const adShown = showInterstitial();
+            if (!adShown) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Erro na Importação',
+                    text2: 'Não foi possível exibir anúncio.',
+                });
+                return;
+            }
+        }
+
         try {
             const jsonString = await Clipboard.getStringAsync();
             if (!jsonString) {
@@ -127,7 +156,7 @@ const TitleListScreen: React.FC = () => {
         } finally {
             setIsImportModalVisible(false);
         }
-    }, [loadData]);
+    }, [loadData, isPremium, showInterstitial]);
 
     const cancelImport = useCallback(() => {
         setIsImportModalVisible(false);
@@ -145,6 +174,18 @@ const TitleListScreen: React.FC = () => {
                 text2: 'Faça login para sincronizar com a nuvem.'
             });
             return;
+        }
+
+        if (!isPremium) {
+            const adShown = showInterstitial();
+            if (!adShown) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Erro na Sincronização',
+                    text2: 'Não foi possível exibir anúncio.',
+                });
+                return;
+            }
         }
         setIsSyncing(true);
         try {
@@ -166,7 +207,7 @@ const TitleListScreen: React.FC = () => {
         } finally {
             setIsSyncing(false);
         }
-    }, [user, loadData]);
+    }, [user, loadData, isPremium, showInterstitial]);
 
     const handleCloudLoginOrOptions = useCallback(() => {
         navigation.navigate('Login');

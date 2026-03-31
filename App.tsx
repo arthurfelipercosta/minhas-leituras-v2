@@ -1,7 +1,7 @@
 // App.tsx
 
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +12,8 @@ import { colors } from '@/styles/colors';
 import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 import { AuthProvider } from '@/context/AuthContext';
 import { SubscriptionProvider } from '@/context/SubscriptionContext';
+import { useSubscription } from '@/context/SubscriptionContext';
+import AdBanner from '@/components/ads/AdBanner';
 
 // import de páginas
 import TitleListScreen from '@/screens/TitleListScreen';
@@ -38,6 +40,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function AppNavigator() {
   const { theme } = useTheme();
+  const { isPremium } = useSubscription();
   const themeColors = colors[theme];
 
   const navigationTheme = {
@@ -58,71 +61,74 @@ function AppNavigator() {
         style={theme === 'dark' ? 'light' : 'dark'}
         backgroundColor={themeColors.background}
       />
-      <NavigationContainer theme={navigationTheme}>
-        <Stack.Navigator initialRouteName='TitleList' id={undefined}>
-          <Stack.Screen
-            name='TitleList'
-            component={TitleListScreen}
-            options={{
-              title: 'Minhas Leituras'
-            }}
-          />
-          <Stack.Screen
-            name='TitleDetail'
-            component={TitleDetailScreen}
-            options={{
-              title: 'Detalhes do título',
-              headerRight: () => <ThemeToggleButton />,
-            }}
-          />
-          <Stack.Screen
-            name='Settings'
-            component={SettingsScreen}
-            options={{
-              title: 'Configurações',
-              headerRight: () => <ThemeToggleButton />,
-            }}
-          />
-          <Stack.Screen
-            name='Statistics'
-            component={StatisticsScreen}
-            options={{
-              title: 'Estatísticas',
-              headerRight: () => <ThemeToggleButton />,
-            }}
-          />
-          <Stack.Screen
-            name='Login'
-            component={LoginScreen}
-            options={{
-              title: 'Login',
-            }}
-          />
-          <Stack.Screen
-            name='ChangePassword'
-            component={ChangePasswordScreen}
-            options={{
-              title: 'Trocar Senha'
-            }}
-          />
-          <Stack.Screen
-            name='Subscription'
-            component={SubscriptionScreen}
-            options={{
-              title: 'Assinatura',
-              headerRight: () => <ThemeToggleButton />
-            }}
-          />
-          <Stack.Screen
-            name='Profile'
-            component={ProfileScreen}
-            options={{
-              title: 'Perfil',
-              headerRight: () => <ThemeToggleButton />
-            }}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <View style={{ flex: 1 }}>
+        <NavigationContainer theme={navigationTheme}>
+          <Stack.Navigator initialRouteName='TitleList' id={undefined}>
+            <Stack.Screen
+              name='TitleList'
+              component={TitleListScreen}
+              options={{
+                title: 'Minhas Leituras'
+              }}
+            />
+            <Stack.Screen
+              name='TitleDetail'
+              component={TitleDetailScreen}
+              options={{
+                title: 'Detalhes do título',
+                headerRight: () => <ThemeToggleButton />,
+              }}
+            />
+            <Stack.Screen
+              name='Settings'
+              component={SettingsScreen}
+              options={{
+                title: 'Configurações',
+                headerRight: () => <ThemeToggleButton />,
+              }}
+            />
+            <Stack.Screen
+              name='Statistics'
+              component={StatisticsScreen}
+              options={{
+                title: 'Estatísticas',
+                headerRight: () => <ThemeToggleButton />,
+              }}
+            />
+            <Stack.Screen
+              name='Login'
+              component={LoginScreen}
+              options={{
+                title: 'Login',
+              }}
+            />
+            <Stack.Screen
+              name='ChangePassword'
+              component={ChangePasswordScreen}
+              options={{
+                title: 'Trocar Senha'
+              }}
+            />
+            <Stack.Screen
+              name='Subscription'
+              component={SubscriptionScreen}
+              options={{
+                title: 'Assinatura',
+                headerRight: () => <ThemeToggleButton />
+              }}
+            />
+            <Stack.Screen
+              name='Profile'
+              component={ProfileScreen}
+              options={{
+                title: 'Perfil',
+                headerRight: () => <ThemeToggleButton />
+              }}
+            />
+          </Stack.Navigator>
+        </NavigationContainer>
+        {!isPremium && <AdBanner />}
+      </View >
     </>
   )
 }

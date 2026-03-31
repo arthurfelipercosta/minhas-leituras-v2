@@ -15,6 +15,8 @@ import { colors } from '@/styles/colors';
 import { RootStackParamList } from 'App';
 import { syncTitlesFromFirebase, syncTitlesToFirebase } from '@/services/syncService';
 import { requestAccountDeletionService } from '@/services/userServices';
+import { useSubscription } from '@/context/SubscriptionContext';
+import { useInterstitial } from '@/hooks/useAds';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -29,6 +31,9 @@ const ProfileScreen: React.FC = () => {
     const [isSyncing, setIsSyncing] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
 
+    const { isPremium, currentPlanId, loading: subLoading } = useSubscription();
+    const { showInterstitial } = useInterstitial();
+
     const syncIconName = !isConnected ? 'sync-problem' : 'sync';
     const syncLabel = !isConnected
         ? 'Sem conexão'
@@ -38,6 +43,11 @@ const ProfileScreen: React.FC = () => {
 
     const rotation = useRef(new Animated.Value(0)).current;
     const uploadTranslation = useRef(new Animated.Value(0)).current;
+
+    // useEffect(() => {
+    //     console.log('Premium: ', isPremium);
+    //     console.log('Plano Atual: ', currentPlanId);
+    // }, [isPremium, currentPlanId]);
 
     useEffect(() => {
         if (isSyncing) {
@@ -115,8 +125,21 @@ const ProfileScreen: React.FC = () => {
 
         try {
             setIsSyncing(true);
-            // Agora: só baixa da nuvem e faz merge; o lastUpdate mais recente ganha
+
+            if (!isPremium) {
+                const adShown = showInterstitial();
+                if (!adShown) {
+                    Toast.show({
+                        type: 'error',
+                        text1: 'Erro na sincronização',
+                        text2: 'Não foi possível exibir anúncio.',
+                    });
+                    return;
+                }
+            }
+
             await syncTitlesFromFirebase();
+
             Toast.show({
                 type: 'success',
                 text1: 'Sincronização concluída!',
@@ -145,7 +168,21 @@ const ProfileScreen: React.FC = () => {
 
         try {
             setIsUploading(true);
+
+            if (!isPremium) {
+                const adShown = showInterstitial();
+                if (!adShown) {
+                    Toast.show({
+                        type: 'error',
+                        text1: 'Erro no upload',
+                        text2: 'Não foi possível exibir anúncio.',
+                    });
+                    return;
+                }
+            }
+
             await syncTitlesToFirebase();
+            
             Toast.show({
                 type: 'success',
                 text1: 'Upload concluído!',
