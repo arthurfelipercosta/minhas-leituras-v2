@@ -5,6 +5,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingVi
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
+import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -206,6 +207,27 @@ const LoginScreen: React.FC = () => {
         }
     };
 
+    const handleGoogleSignIn = async () => {
+        try {
+            setIsLoading(true);
+            await signInWithGoogle();
+            Toast.show({
+                type: 'success',
+                text1: 'Login realizado com sucesso!',
+                text2: 'Bem-vindo!'
+            });
+            navigation.navigate('Profile');
+        } catch (error: any) {
+            Toast.show({
+                type: 'error',
+                text1: 'Erro ao fazer login com Google',
+                text2: error.message || 'Não foi possível fazer login com Google.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleModeSwitch = () => {
         clearErrors();
         setIsLoginMode(!isLoginMode);
@@ -357,6 +379,15 @@ const LoginScreen: React.FC = () => {
                             </TouchableOpacity>
                         </>
                     )}
+
+                    <TouchableOpacity
+                        style={[styles.googleButton, isLoading && styles.buttonDisabled]}
+                        onPress={handleGoogleSignIn}
+                        disabled={isLoading}
+                    >
+                        <FontAwesome5 name="google" size={24} color="#4285F4" />
+                        <Text style={styles.googleButtonText}>Entrar com Google</Text>
+                    </TouchableOpacity>
 
                     {showResetPassword && (
                         <>

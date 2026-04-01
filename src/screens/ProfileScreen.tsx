@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert, Animated, Easing } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { MaterialIcons } from '@expo/vector-icons';
+import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
 import Toast from 'react-native-toast-message';
 
@@ -44,6 +44,7 @@ const ProfileScreen: React.FC = () => {
 
     const rotation = useRef(new Animated.Value(0)).current;
     const uploadTranslation = useRef(new Animated.Value(0)).current;
+    const hasGoogleProvider = user?.providerData.some(provider => provider.providerId === 'google.com');
 
     useEffect(() => {
         if (isSyncing) {
@@ -215,6 +216,18 @@ const ProfileScreen: React.FC = () => {
             { cancelable: false }
         );
     }
+
+    const handleLinkGoogle = async () => {
+        try {
+            await linkGoogleAccount();
+        } catch (error: any) {
+            Toast.show({
+                type: 'error',
+                text1: 'Erro ao conectar',
+                text2: error.message || 'Não foi possível conectar sua conta Google.',
+            });
+        }
+    };
 
     const handleLogout = () => {
         Alert.alert(
