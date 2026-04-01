@@ -24,10 +24,16 @@ const ProfileScreen: React.FC = () => {
     const themeColors = colors[theme];
     const styles = createStyles(theme, themeColors);
 
-    const { user, logout, loading } = useAuth();
+    const { user, logout, loading, linkGoogleToAccount } = useAuth();
     const [isConnected, setIsConnected] = useState(true);
     const [isSyncing, setIsSyncing] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const [isLinkingGoogle, setIsLinkingGoogle] = useState(false);
+
+    // Detecta provedor do usuário
+    const isGoogleUser = user?.providerData.some(p => p.providerId === 'google.com');
+    const isPasswordUser = user?.providerData.some(p => p.providerId === 'password');
+    const hasGoogleLinked = isGoogleUser;
 
     const syncIconName = !isConnected ? 'sync-problem' : 'sync';
     const syncLabel = !isConnected
@@ -115,7 +121,6 @@ const ProfileScreen: React.FC = () => {
 
         try {
             setIsSyncing(true);
-            // Agora: só baixa da nuvem e faz merge; o lastUpdate mais recente ganha
             await syncTitlesFromFirebase();
             Toast.show({
                 type: 'success',
@@ -166,6 +171,21 @@ const ProfileScreen: React.FC = () => {
         navigation.navigate('ChangePassword' as any);
     };
 
+    const handleLinkGoogle = async () => {
+        try {
+            setIsLinkingGoogle(true);
+            await linkGoogleToAccount();
+        } catch (error: any) {
+            Toast.show({
+                type: 'error',
+                text1: 'Erro ao vincular',
+                text2: error.message || 'Não foi possível vincular a conta Google.',
+            });
+        } finally {
+            setIsLinkingGoogle(false);
+        }
+    };
+
     const handleRequestDeletion = async () => {
         Alert.alert('Confirmar Exclusão de Conta',
             'Sua conta será permanentemente excluída em 15 dias. Você pode cancelar a exclusão fazendo login novamente nesse período. Deseja continuar?',
@@ -181,7 +201,7 @@ const ProfileScreen: React.FC = () => {
                                 text1: 'Exclusão Solicitada!',
                                 text2: 'Sua conta será excluída em 15 dias. Você foi desconectado.',
                             });
-                            navigation.navigate('Login' as any); // Ou para a tela inicial
+                            navigation.navigate('Login' as any);
                         } catch (error: any) {
                             Toast.show({
                                 type: 'error',
@@ -232,7 +252,6 @@ const ProfileScreen: React.FC = () => {
 
     useEffect(() => {
         if (!user && !loading) {
-            // Se não estiver logado, redireciona para login
             navigation.navigate('Login' as any);
         }
     }, [loading, user, navigation]);
@@ -301,16 +320,37 @@ const ProfileScreen: React.FC = () => {
                     </View>
                 </TouchableOpacity>
 
-                {/* Botão TROCAR SENHA */}
-                <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={handleChangePassword}
-                >
-                    <View style={styles.actionButtonContent}>
-                        <MaterialIcons name='lock' size={24} color={themeColors.text} />
-                        <Text style={styles.actionButtonText}>Trocar Senha</Text>
-                    </View>
-                </TouchableOpacity>
+                {/* Botão TROCAR SENHA — só para usuários email/senha */}
+                {isPasswordUser && (
+                    <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={handleChangePassword}
+                    >
+                        <View style={styles.actionButtonContent}>
+                            <MaterialIcons name='lock' size={24} color={themeColors.text} />
+                            <Text style={styles.actionButtonText}>Trocar Senha</Text>
+                        </View>
+                    </TouchableOpacity>
+                )}
+
+                {/* Botão VINCULAR GOOGLE — só para usuários email/senha sem Google vinculado */}
+                {isPasswordUser && !hasGoogleLinked && (
+                    <TouchableOpacity
+                        style={[styles.actionButton, isLinkingGoogle && styles.actionButtonDisabled]}
+                        onPress={handleLinkGoogle}
+                        disabled={isLinkingGoogle}
+                    >
+                        <View style={styles.actionButtonContent}>
+                            <MaterialIcons name='link' size={24} color={themeColors.text} />
+                            <Text style={styles.actionButtonText}>
+                                {isLinkingGoogle ? 'Vinculando...' : 'Vincular conta Google'}
+                            </Text>
+                            {isLinkingGoogle && (
+                                <ActivityIndicator size='small' color={themeColors.primary} />
+                            )}
+                        </View>
+                    </TouchableOpacity>
+                )}
 
                 <TouchableOpacity
                     style={styles.deleteButton}

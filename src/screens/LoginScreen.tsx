@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { MaterialIcons } from '@expo/vector-icons';
+import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -28,7 +28,7 @@ const LoginScreen: React.FC = () => {
     const themeColors = colors[theme];
     const styles = createStyles(theme, themeColors);
 
-    const { signIn, signUp, resetPassword, user } = useAuth();
+    const { signIn, signUp, resetPassword, signInWithGoogle, user } = useAuth();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -43,7 +43,7 @@ const LoginScreen: React.FC = () => {
     const clearErrors = () => setFieldErrors({});
 
     React.useEffect(() => {
-        if(user) {
+        if (user) {
             navigation.navigate('Profile' as any);
         }
     }, [user, navigation]);
@@ -91,6 +91,28 @@ const LoginScreen: React.FC = () => {
             setIsLoading(false);
         }
     };
+
+    const handleGoogleSignIn = async () => {
+        try {
+            setIsLoading(true);
+            await signInWithGoogle();
+
+            Toast.show({
+                type: 'success',
+                text1: 'Login realizado!',
+                text2: 'Bem-vindo!',
+            });
+            navigation.navigate('Profile');
+        } catch (error: any) {
+            Toast.show({
+                type: 'error',
+                text1: 'Erro no login com Google',
+                text2: error.message || 'Não foi possível entrar com o Google.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }
 
     const handleSignUp = async () => {
         const errors: FieldErrors = {};
@@ -306,6 +328,15 @@ const LoginScreen: React.FC = () => {
                             </TouchableOpacity>
 
                             <TouchableOpacity
+                                style={styles.googleButton}
+                                onPress={handleGoogleSignIn}
+                                disabled={isLoading}
+                            >
+                                <FontAwesome5 name="google" size={20} color={themeColors.text} style={{ marginRight: 8 }} />
+                                <Text style={styles.googleButtonText}>Entrar com Google</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
                                 style={styles.secondaryButton}
                                 onPress={handleModeSwitch}
                                 disabled={isLoading}
@@ -475,6 +506,22 @@ const createStyles = (theme: 'light' | 'dark', themeColors: typeof colors.light)
         },
         togglePasswordButton: {
             padding: 10,
+        },
+        googleButton: {
+            flexDirection: 'row',
+            backgroundColor: '#4285F4',
+            height: 50,
+            borderRadius: 8,
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginBottom: 15,
+            borderWidth: 1,
+            borderColor: themeColors.border
+        },
+        googleButtonText: {
+            color: 'white',
+            fontSize: 16,
+            fontWeight: 'bold',
         },
     });
 

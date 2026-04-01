@@ -1,6 +1,6 @@
 // src/context/AuthContext.tsx
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { doc, getDoc } from 'firebase/firestore';
@@ -14,15 +14,21 @@ import {
     reauthenticateWithCredential,
     onAuthStateChanged,
     EmailAuthProvider,
-    User
+    GoogleAuthProvider,
+    signInWithCredential,
+    User,
+    linkWithCredential
 } from 'firebase/auth';
 import { auth, db } from '@/config/firebaseConfig';
 import { cancelAccountDeletionService, createUserProfileIfNotExists } from '@/services/userServices';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 interface AuthContextData {
     user: User | null;
     loading: boolean;
     signIn: (email: string, password: string) => Promise<void>;
+    signInWithGoogle: () => Promise<void>;
+    linkGoogleToAccount: () => Promise<void>;
     signUp: (email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
     resetPassword: (email: string) => Promise<void>;
@@ -43,6 +49,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         return unsubscribe;
     }, []);
+
+    useEffect(() => {
+        GoogleSignin.configure({
+            webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
+        });
+    }, []);
+
+    const checkPendingDeletion = async (user: User): Promise<boolean> => {
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) { return false; }
+
+        const userData = userSnap.data();
+        if (!userData.isPendingDeletion) return false;
+
+        const deletionDate = new Date(userData.deletionScheduledDate);
+        const now = new Date();
+
+        if (now < deletionDate) {
+            await auth.signOut();
+            Alert.alert(
+                "Conta Marcada para Exclusão",
+                `Sua conta está agendada para exclusão em ${deletionDate.toLocaleDateString()}. Deseja cancelar a exclusão e reativá-la?`,
+                [
+                    {
+                        text: "Não", style: "cancel", onPress: async () => {
+                            await auth.signOut();
+                        }
+                    },
+                    {
+                        text: "Sim", onPress: async () => {
+                            await cancelAccountDeletionService();
+                            setUser(user);
+                            Toast.show({
+                                type: 'success',
+                                text1: 'Exclusão Cancelada!',
+                                text2: 'Sua conta foi reativada.',
+                            });
+                        }
+                    },
+                ],
+                { cancelable: false }
+            );
+            return true;
+        } else {
+            await auth.signOut();
+            throw new Error("Esta conta deveria ter sido excluída. Entre em contato com o suporte.");
+        }
+    };
 
     const signIn = async (email: string, password: string) => {
         try {
@@ -111,6 +167,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const signInWithGoogle = async () => {
+        try {
+            await GoogleSignin.hasPlayServices();
+            const signInResult = await GoogleSignin.signIn();
+            const idToken = signInResult.data?.idToken;
+
+            if (!idToken) throw new Error('Não foi possível obter o token do Google.');
+
+            const credential = GoogleAuthProvider.credential(idToken);
+            const userCredential = await signInWithCredential(auth, credential);
+            const user = userCredential.user;
+
+            await createUserProfileIfNotExists(
+                user.uid,
+                user.email!,
+                user.displayName ?? undefined,
+                user.photoURL ?? undefined,
+            );
+
+            const isPending = await checkPendingDeletion(user);
+            if (!isPending) setUser(user);
+        } catch (error: any) {
+            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+                // usuário cancelou, não faz nada
+                return;
+            }
+            console.error("Erro no Google Sign-In:", error);
+            throw error;
+        }
+    };
+
+    const linkGoogleToAccount = async () => {
+        try {
+            if (!auth.currentUser) throw new Error('Nenhum usuário logado.');
+
+            await GoogleSignin.hasPlayServices();
+            const signInResult = await GoogleSignin.signIn();
+            const idToken = signInResult.data?.idToken;
+
+            if (!idToken) throw new Error('Não foi possível obter o token do Google.');
+
+            const credential = GoogleAuthProvider.credential(idToken);
+            const linkedUser = await linkWithCredential(auth.currentUser!, credential);
+
+            setUser(linkedUser.user);
+            Toast.show({
+                type: 'success',
+                text1: 'Google vinculado!',
+                text2: 'Agora você pode entrar com Google ou email/senha.',
+            });
+        } catch (error: any) {
+            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+                return;
+            }
+            if (error.code === 'auth/credential-already-in-use') {
+                throw new Error('Esta conta Google já está vinculada a outro usuário.');
+            }
+            if (error.code === 'auth/provider-already-linked') {
+                throw new Error('Sua conta já possui o Google vinculado.');
+            }
+            console.error("Erro ao vincular Google:", error);
+            throw error;
+        }
+    }
+
     const signUp = async (email: string, password: string) => {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await createUserProfileIfNotExists(
@@ -143,7 +264,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, signIn, signUp, logout, resetPassword, changePassword }}>
+        <AuthContext.Provider value={{ user, loading, signIn, signInWithGoogle, signUp, logout, resetPassword, changePassword, linkGoogleToAccount }}>
             {children}
         </AuthContext.Provider>
     );
