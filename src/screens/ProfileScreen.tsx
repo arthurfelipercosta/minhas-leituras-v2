@@ -217,18 +217,6 @@ const ProfileScreen: React.FC = () => {
         );
     }
 
-    const handleLinkGoogle = async () => {
-        try {
-            await linkGoogleAccount();
-        } catch (error: any) {
-            Toast.show({
-                type: 'error',
-                text1: 'Erro ao conectar',
-                text2: error.message || 'Não foi possível conectar sua conta Google.',
-            });
-        }
-    };
-
     const handleLogout = () => {
         Alert.alert(
             'Confirmar Logout',
