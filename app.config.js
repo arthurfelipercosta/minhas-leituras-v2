@@ -22,7 +22,7 @@ export default {
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
-    package: "com.arthurfrc.minhasleituras",
+    package: "com.arthurfrc.minhas.leituras",
   },
   plugins: [
     "@react-native-google-signin/google-signin",
