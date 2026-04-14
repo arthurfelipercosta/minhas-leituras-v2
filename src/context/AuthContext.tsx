@@ -31,8 +31,6 @@ interface AuthContextData {
     signUp: (email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
     resetPassword: (email: string) => Promise<void>;
-    signInWithGoogle: () => Promise<void>;
-    linkGoogleAccount: () => Promise<void>;
     changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
@@ -45,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         // Configurar o Google Sign-In
         GoogleSignin.configure({
-            webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT,
+            webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT
         });
 
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -54,12 +52,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         return unsubscribe;
-    }, []);
-
-    useEffect(() => {
-        GoogleSignin.configure({
-            webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
-        });
     }, []);
 
     const checkPendingDeletion = async (user: User): Promise<boolean> => {
@@ -104,6 +96,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await auth.signOut();
             throw new Error("Esta conta deveria ter sido excluída. Entre em contato com o suporte.");
         }
+    };
+
+    const signInWithGoogle = async () => {
+        try {
+            await GoogleSignin.hasPlayServices();
+            const signInResult = await GoogleSignin.signIn();
+            const idToken = signInResult.data?.idToken;
+
+            if (!idToken) {
+                throw new Error('Não foi possível obter o token do Google.');
+            }
+
+            const googleCredential = GoogleAuthProvider.credential(idToken);
+            const userCredential = await signInWithCredential(auth, googleCredential);
+            const user = userCredential.user;
+
+            await createUserProfileIfNotExists(
+                user.uid,
+                user.email!,
+                user.displayName ?? undefined,
+                user.photoURL ?? undefined,
+            );
+
+            const isPending = await checkPendingDeletion(user);
+            if (!isPending) {
+                setUser(user);
+            }
+        } catch (error: any) {
+            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+                throw new Error('Login cancelado pelo usuário.');
+            } else if (error.code === statusCodes.IN_PROGRESS) {
+                throw new Error('Login já em andamento.');
+            } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+                throw new Error('Google Play Services não disponível.');
+            }
+            throw error;
+        }
+    };
+
+    const linkGoogleToAccount = async () => {
+        if (!auth.currentUser) throw new Error('Usuário não encontrado');
+
+        await GoogleSignin.hasPlayServices();
+        const signInResult = await GoogleSignin.signIn();
+        const idToken = signInResult.data?.idToken;
+
+        if (!idToken) throw new Error('Não foi possível obter o token do Google.');
+
+        const googleCredential = GoogleAuthProvider.credential(idToken);
+        await linkWithCredential(auth.currentUser, googleCredential);
     };
 
     const signIn = async (email: string, password: string) => {
@@ -205,7 +247,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, signIn, signUp, logout, resetPassword, changePassword }}>
+        <AuthContext.Provider value={{
+            user, loading, signIn, signUp, logout,
+            resetPassword, changePassword,
+            signInWithGoogle, linkGoogleToAccount
+        }}>
             {children}
         </AuthContext.Provider>
     );
